@@ -9,7 +9,7 @@ player_debug.log
 gamemanager_debug.log
 interactable_debug.log
 
-# OS generated files
+# OS and Office generated files
 .DS_Store
 .DS_Store?
 ._*
@@ -17,3 +17,5 @@ interactable_debug.log
 .Trashes
 ehthumbs.db
 Thumbs.db
+~$*
+.~lock.*
