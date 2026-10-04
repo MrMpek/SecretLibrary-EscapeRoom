@@ -97,19 +97,22 @@ func _ready() -> void:
 	if panel_indicator:
 		panel_indicator.set_surface_override_material(0, red_material)
 
-	# Scramble and hide triangle pieces
+	# Scramble and hide triangle pieces with collision disabled
 	if piece_1:
 		piece_1.rotation_degrees.y = 120.0
 		piece_1.set("visible", false)
 		piece_1.set("is_interactive", false)
+		_set_piece_collision(piece_1, false)
 	if piece_2:
 		piece_2.rotation_degrees.y = 0.0
 		piece_2.set("visible", false)
 		piece_2.set("is_interactive", false)
+		_set_piece_collision(piece_2, false)
 	if piece_3:
 		piece_3.rotation_degrees.y = 60.0
 		piece_3.set("visible", false)
 		piece_3.set("is_interactive", false)
+		_set_piece_collision(piece_3, false)
 
 	# Connect signals dynamically
 	if switch_1:
@@ -211,6 +214,12 @@ func reset_puzzle() -> void:
 			var tween := create_tween()
 			tween.tween_property(switch_node, "rotation_degrees:x", -25.0, 0.3).set_trans(Tween.TRANS_SINE)
 
+func _set_piece_collision(piece_node: Node, enabled: bool) -> void:
+	if not piece_node: return
+	for child in piece_node.get_children():
+		if child is CollisionShape3D:
+			child.disabled = !enabled
+
 func reveal_triangle_puzzle() -> void:
 	is_triangle_puzzle_revealed = true
 	log_debug("Revealing triangle puzzle pieces on the table")
@@ -219,6 +228,7 @@ func reveal_triangle_puzzle() -> void:
 			piece.set("visible", true)
 			piece.set("is_interactive", true)
 			piece.set("prompt_message", "Rotate Piece")
+			_set_piece_collision(piece, true)
 
 func _on_piece_interacted(player: Node, piece_index: int) -> void:
 	log_debug("Piece interacted: " + str(piece_index))
