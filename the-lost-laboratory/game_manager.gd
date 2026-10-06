@@ -23,12 +23,17 @@ var correct_sequence := [0, 2, 1]
 var current_sequence := []
 var switch_states := [false, false, false]
 
+# Discrete angles tracked logically to prevent floating-point desynchronization on spam-click
+var piece_target_angles := [120.0, 0.0, 60.0]
+var piece_tweens := [null, null, null]
+
 var red_material: StandardMaterial3D
 var green_material: StandardMaterial3D
 
 var is_unlocked := false
 var is_door_open := false
 var is_triangle_puzzle_revealed := false
+var is_resetting := false
 
 func log_debug(message: String) -> void:
 	var path := "res://gamemanager_debug.log"
@@ -99,17 +104,17 @@ func _ready() -> void:
 
 	# Scramble and hide triangle pieces with collision disabled
 	if piece_1:
-		piece_1.rotation_degrees.y = 120.0
+		piece_1.rotation_degrees.y = piece_target_angles[0]
 		piece_1.set("visible", false)
 		piece_1.set("is_interactive", false)
 		_set_piece_collision(piece_1, false)
 	if piece_2:
-		piece_2.rotation_degrees.y = 0.0
+		piece_2.rotation_degrees.y = piece_target_angles[1]
 		piece_2.set("visible", false)
 		piece_2.set("is_interactive", false)
 		_set_piece_collision(piece_2, false)
 	if piece_3:
-		piece_3.rotation_degrees.y = 60.0
+		piece_3.rotation_degrees.y = piece_target_angles[2]
 		piece_3.set("visible", false)
 		piece_3.set("is_interactive", false)
 		_set_piece_collision(piece_3, false)
@@ -146,7 +151,7 @@ func reset_indicators() -> void:
 
 func _on_switch_interacted(player: Node, switch_index: int) -> void:
 	log_debug("Switch interacted: " + str(switch_index))
-	if is_triangle_puzzle_revealed or is_unlocked:
+	if is_triangle_puzzle_revealed or is_unlocked or is_resetting:
 		return
 
 	# Toggle switch state
@@ -177,11 +182,11 @@ func _on_switch_interacted(player: Node, switch_index: int) -> void:
 	if is_correct_so_far:
 		log_debug("Sequence correct so far: " + str(current_sequence))
 		# Update corresponding indicator
-		if switch_index == 0 && indicator_1:
+		if switch_index == 0 and indicator_1:
 			indicator_1.set_surface_override_material(0, green_material)
-		elif switch_index == 2 && indicator_3:
+		elif switch_index == 2 and indicator_3:
 			indicator_3.set_surface_override_material(0, green_material)
-		elif switch_index == 1 && indicator_2:
+		elif switch_index == 1 and indicator_2:
 			indicator_2.set_surface_override_material(0, green_material)
 			
 		if step_count == correct_sequence.size():
@@ -192,6 +197,7 @@ func _on_switch_interacted(player: Node, switch_index: int) -> void:
 		reset_puzzle()
 
 func reset_puzzle() -> void:
+	is_resetting = true
 	current_sequence.clear()
 	
 	# Flash red indicators
@@ -213,6 +219,8 @@ func reset_puzzle() -> void:
 		if switch_node:
 			var tween := create_tween()
 			tween.tween_property(switch_node, "rotation_degrees:x", -25.0, 0.3).set_trans(Tween.TRANS_SINE)
+			
+	is_resetting = false
 
 func _set_piece_collision(piece_node: Node, enabled: bool) -> void:
 	if not piece_node: return
@@ -243,14 +251,19 @@ func _on_piece_interacted(player: Node, piece_index: int) -> void:
 	if not piece:
 		return
 		
-	# Rotate the piece by 60 degrees around Y axis
-	var current_rotation = piece.rotation_degrees.y
-	var target_rotation = fmod(current_rotation + 60.0, 360.0)
+	# Advance discrete target angle by exact 60 degrees
+	piece_target_angles[piece_index] = fposmod(piece_target_angles[piece_index] + 60.0, 360.0)
+	var target_rotation = piece_target_angles[piece_index]
 	
-	log_debug("Rotating piece " + str(piece_index) + " from " + str(current_rotation) + " to " + str(target_rotation))
+	log_debug("Rotating piece " + str(piece_index) + " to exact discrete angle: " + str(target_rotation))
 	
+	# Safely manage per-piece tween
+	if piece_tweens[piece_index] and piece_tweens[piece_index].is_valid():
+		piece_tweens[piece_index].kill()
+		
 	var tween := create_tween()
-	tween.tween_property(piece, "rotation_degrees:y", target_rotation, 0.25).set_trans(Tween.TRANS_SINE)
+	piece_tweens[piece_index] = tween
+	tween.tween_property(piece, "rotation_degrees:y", target_rotation, 0.22).set_trans(Tween.TRANS_SINE)
 	await tween.finished
 	
 	check_triangle_puzzle()
@@ -259,9 +272,9 @@ func check_triangle_puzzle() -> void:
 	if not piece_1 or not piece_2 or not piece_3:
 		return
 		
-	var angle1 = fposmod(round(piece_1.rotation_degrees.y), 360)
-	var angle2 = fposmod(round(piece_2.rotation_degrees.y), 360)
-	var angle3 = fposmod(round(piece_3.rotation_degrees.y), 360)
+	var angle1 = fposmod(round(piece_target_angles[0]), 360)
+	var angle2 = fposmod(round(piece_target_angles[1]), 360)
+	var angle3 = fposmod(round(piece_target_angles[2]), 360)
 	
 	log_debug("Checking triangle puzzle angles: Piece1=" + str(angle1) + ", Piece2=" + str(angle2) + ", Piece3=" + str(angle3))
 	
@@ -269,7 +282,6 @@ func check_triangle_puzzle() -> void:
 	# 0: Horizontal (0 or 180)
 	# 1: Slash (60 or 240)
 	# 2: Backslash (120 or 300)
-	# -1: Unknown
 	var type1 := -1
 	if angle1 == 0 or angle1 == 180: type1 = 0
 	elif angle1 == 60 or angle1 == 240: type1 = 1
@@ -301,7 +313,7 @@ func unlock_escape_door() -> void:
 		panel_indicator.set_surface_override_material(0, green_material)
 	if access_panel:
 		access_panel.set("is_interactive", true)
-		access_panel.set("prompt_message", "Open Exit Door")
+		access_panel.set("prompt_message", "Turn Secret Crest")
 
 func _on_access_panel_interacted(player: Node) -> void:
 	log_debug("Access panel interacted")

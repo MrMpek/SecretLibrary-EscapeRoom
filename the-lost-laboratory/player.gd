@@ -11,6 +11,8 @@ var victory_screen: Control
 var debug_label: Label
 var crosshair_label: Label
 var hand_pivot: Node3D
+var hand_tween: Tween
+var has_escaped := false
 
 func log_debug(message: String) -> void:
 	var path := "res://player_debug.log"
@@ -95,13 +97,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		_trigger_interaction()
 
 func _trigger_interaction() -> void:
-	# Play first-person hand reach animation
+	# Play first-person hand reach animation with safe tween recycling
 	if hand_pivot:
-		var tween := create_tween()
-		tween.tween_property(hand_pivot, "position:z", -0.7, 0.1).set_trans(Tween.TRANS_SINE)
-		tween.tween_property(hand_pivot, "position:x", 0.12, 0.1).set_trans(Tween.TRANS_SINE)
-		tween.tween_property(hand_pivot, "position:z", -0.45, 0.15).set_trans(Tween.TRANS_SINE).set_delay(0.08)
-		tween.tween_property(hand_pivot, "position:x", 0.2, 0.15).set_trans(Tween.TRANS_SINE).set_delay(0.08)
+		if hand_tween and hand_tween.is_valid():
+			hand_tween.kill()
+		hand_tween = create_tween()
+		hand_tween.tween_property(hand_pivot, "position:z", -0.7, 0.1).set_trans(Tween.TRANS_SINE)
+		hand_tween.tween_property(hand_pivot, "position:x", 0.12, 0.1).set_trans(Tween.TRANS_SINE)
+		hand_tween.tween_property(hand_pivot, "position:z", -0.45, 0.15).set_trans(Tween.TRANS_SINE).set_delay(0.08)
+		hand_tween.tween_property(hand_pivot, "position:x", 0.2, 0.15).set_trans(Tween.TRANS_SINE).set_delay(0.08)
 
 	var target = _get_interactable_target()
 	if target and target.has_method("interact"):
@@ -193,6 +197,9 @@ func _physics_process(delta: float) -> void:
 				debug_label.text = "Looking at: Nothing"
 
 func escape(body: Node3D = null) -> void:
+	if has_escaped:
+		return
+	has_escaped = true
 	log_debug("Escaped!")
 	# Release mouse and show victory screen
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
