@@ -24,7 +24,7 @@ var current_sequence := []
 var switch_states := [false, false, false]
 
 # Discrete angles tracked logically to prevent floating-point desynchronization on spam-click
-var piece_target_angles := [120.0, 0.0, 60.0]
+var piece_target_angles := [0.0, 180.0, 60.0]
 var piece_tweens := [null, null, null]
 
 var red_material: StandardMaterial3D

@@ -197,6 +197,9 @@ func _physics_process(delta: float) -> void:
 				debug_label.text = "Looking at: Nothing"
 
 func escape(body: Node3D = null) -> void:
+	var gm = get_node_or_null("../GameManager")
+	if gm and not gm.is_door_open:
+		return
 	if has_escaped:
 		return
 	has_escaped = true

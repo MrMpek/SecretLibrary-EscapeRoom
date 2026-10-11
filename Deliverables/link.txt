@@ -1,0 +1,15 @@
+ίτλος Εργασίας: The Secret Library - Interactive Escape Room
+Μάθημα: Ευφυή Εικονικά Περιβάλλοντα και Ανάπτυξη Παιχνιδιών
+ΠΜΣ: Προηγμένα Συστήματα Πληροφορικής – Ανάπτυξη Λογισμικού και Τεχνητής Νοημοσύνης
+Τμήμα Πληροφορικής, Πανεπιστήμιο Πειραιώς
+Ακαδημαϊκό Έτος: 2025-2026
+
+Σύνδεσμος Λήψης Έργου (Cloud / Google Drive):
+[ΕΠΙΚΟΛΛΗΣΤΕ ΕΔΩ ΤΟ SHAREABLE LINK ΤΟΥ ZIP ΣΤΟ GOOGLE DRIVE / DROPBOX]
+
+Αποθετήριο GitHub:
+https://github.com/MrMpek/SecretLibrary-EscapeRoom
+
+Στοιχεία Επικοινωνίας Φοιτητών:
+1. Παναγιώτης Μπεκιάρης (mpsp2530) | Email: mpekpanagiotis@gmail.com| Τηλέφωνο: 6931639400
+2. Κωνσταντίνα Τόσκα (mpsp2552) | Email: konstantinatoska21@gmail.com | Τηλέφωνο: 6948066755
