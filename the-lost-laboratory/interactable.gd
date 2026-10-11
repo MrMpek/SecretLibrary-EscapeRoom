@@ -1,25 +1,25 @@
-extends CollisionObject3D
+## Βασική κλάση αλληλεπιδράσιμων αντικειμένων (Interactable).
+## Κληρονομεί από CollisionObject3D και επιτρέπει στον παίκτη να εντοπίζει
+## και να αλληλεπιδρά με αντικείμενα μέσω raycasting (διακόπτες, κομμάτια παζλ, πύλη κ.λπ.).
 class_name Interactable
+extends CollisionObject3D
 
-@export var prompt_message := "Interact"
-@export var is_interactive := true
+## Το μήνυμα προτροπής (HUD prompt) που εμφανίζεται στην οθόνη του παίκτη κατά τη σκόπευση.
+@export var prompt_message: String = "Interact"
 
-signal interacted(player)
+## Καθορίζει αν το αντικείμενο είναι ενεργό για αλληλεπίδραση στην παρούσα φάση του παιχνιδιού.
+@export var is_interactive: bool = true
 
-func log_debug(message: String) -> void:
-	var path := "res://interactable_debug.log"
-	var file = FileAccess.open(path, FileAccess.READ_WRITE)
-	if not file:
-		file = FileAccess.open(path, FileAccess.WRITE)
-	if file:
-		file.seek_end()
-		file.store_line(str(Time.get_time_string_from_system()) + " [" + name + "]: " + message)
-		file.close()
+## Σήμα που εκπέμπεται κατά την επιτυχή αλληλεπίδραση, μεταβιβάζοντας τον κόμβο του παίκτη.
+signal interacted(player: Node)
 
-func interact(player) -> void:
-	log_debug("interact() called")
+## Εκτελείται όταν ο παίκτης πατήσει το πλήκτρο αλληλεπίδρασης έχοντας στοχεύσει το αντικείμενο.
+## Ελέγχει αν το αντικείμενο είναι ενεργό και εκπέμπει το αντίστοιχο σήμα [signal interacted].
+func interact(player: Node) -> void:
 	if is_interactive:
-		log_debug("emitting interacted signal")
+		if OS.is_debug_build():
+			print("[Interactable] Αλληλεπίδραση με αντικείμενο: ", name)
 		interacted.emit(player)
 	else:
-		log_debug("is_interactive is false, doing nothing")
+		if OS.is_debug_build():
+			print("[Interactable] Το αντικείμενο ", name, " είναι ανενεργό (is_interactive = false).")
