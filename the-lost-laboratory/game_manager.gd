@@ -23,8 +23,9 @@ var correct_sequence := [0, 2, 1]
 var current_sequence := []
 var switch_states := [false, false, false]
 
-# Discrete angles tracked logically to prevent floating-point desynchronization on spam-click
-var piece_target_angles := [0.0, 180.0, 60.0]
+# Discrete angles tracked logically and visual angles tracked cumulatively
+# to prevent floating-point desynchronization and 360° reverse tween spin
+var piece_visual_angles: Array[float] = [0.0, 180.0, 60.0]
 var piece_tweens := [null, null, null]
 
 var red_material: StandardMaterial3D
@@ -104,17 +105,17 @@ func _ready() -> void:
 
 	# Scramble and hide triangle pieces with collision disabled
 	if piece_1:
-		piece_1.rotation_degrees.y = piece_target_angles[0]
+		piece_1.rotation_degrees.y = piece_visual_angles[0]
 		piece_1.set("visible", false)
 		piece_1.set("is_interactive", false)
 		_set_piece_collision(piece_1, false)
 	if piece_2:
-		piece_2.rotation_degrees.y = piece_target_angles[1]
+		piece_2.rotation_degrees.y = piece_visual_angles[1]
 		piece_2.set("visible", false)
 		piece_2.set("is_interactive", false)
 		_set_piece_collision(piece_2, false)
 	if piece_3:
-		piece_3.rotation_degrees.y = piece_target_angles[2]
+		piece_3.rotation_degrees.y = piece_visual_angles[2]
 		piece_3.set("visible", false)
 		piece_3.set("is_interactive", false)
 		_set_piece_collision(piece_3, false)
@@ -251,11 +252,11 @@ func _on_piece_interacted(player: Node, piece_index: int) -> void:
 	if not piece:
 		return
 		
-	# Advance discrete target angle by exact 60 degrees
-	piece_target_angles[piece_index] = fposmod(piece_target_angles[piece_index] + 60.0, 360.0)
-	var target_rotation = piece_target_angles[piece_index]
+	# Advance cumulative visual angle by exact 60 degrees to prevent reverse spin
+	piece_visual_angles[piece_index] += 60.0
+	var target_rotation: float = piece_visual_angles[piece_index]
 	
-	log_debug("Rotating piece " + str(piece_index) + " to exact discrete angle: " + str(target_rotation))
+	log_debug("Rotating piece " + str(piece_index) + " to visual angle: " + str(target_rotation))
 	
 	# Safely manage per-piece tween
 	if piece_tweens[piece_index] and piece_tweens[piece_index].is_valid():
@@ -272,39 +273,23 @@ func check_triangle_puzzle() -> void:
 	if not piece_1 or not piece_2 or not piece_3:
 		return
 		
-	var angle1 = fposmod(round(piece_target_angles[0]), 360)
-	var angle2 = fposmod(round(piece_target_angles[1]), 360)
-	var angle3 = fposmod(round(piece_target_angles[2]), 360)
+	var angle1 := int(round(fposmod(piece_visual_angles[0], 360.0)))
+	var angle2 := int(round(fposmod(piece_visual_angles[1], 360.0)))
+	var angle3 := int(round(fposmod(piece_visual_angles[2], 360.0)))
 	
 	log_debug("Checking triangle puzzle angles: Piece1=" + str(angle1) + ", Piece2=" + str(angle2) + ", Piece3=" + str(angle3))
 	
-	# Classify each piece's rotation type:
-	# 0: Horizontal (0 or 180)
-	# 1: Slash (60 or 240)
-	# 2: Backslash (120 or 300)
-	var type1 := -1
-	if angle1 == 0 or angle1 == 180: type1 = 0
-	elif angle1 == 60 or angle1 == 240: type1 = 1
-	elif angle1 == 120 or angle1 == 300: type1 = 2
+	# Piece 1 is horizontal base: requires 0° or 180°
+	# Piece 2 is left diagonal side: requires 60° or 240°
+	# Piece 3 is right diagonal side: requires 120° or 300°
+	var is_p1_valid := (angle1 % 180 == 0)
+	var is_p2_valid := (angle2 % 180 == 60)
+	var is_p3_valid := (angle3 % 180 == 120)
 	
-	var type2 := -1
-	if angle2 == 0 or angle2 == 180: type2 = 0
-	elif angle2 == 60 or angle2 == 240: type2 = 1
-	elif angle2 == 120 or angle2 == 300: type2 = 2
+	log_debug("Validity: P1=" + str(is_p1_valid) + ", P2=" + str(is_p2_valid) + ", P3=" + str(is_p3_valid))
 	
-	var type3 := -1
-	if angle3 == 0 or angle3 == 180: type3 = 0
-	elif angle3 == 60 or angle3 == 240: type3 = 1
-	elif angle3 == 120 or angle3 == 300: type3 = 2
-	
-	log_debug("Classified types: T1=" + str(type1) + ", T2=" + str(type2) + ", T3=" + str(type3))
-	
-	# The puzzle is solved if we have exactly one of each type: 0, 1, and 2!
-	var types := [type1, type2, type3]
-	types.sort()
-	
-	if types == [0, 1, 2]:
-		log_debug("Triangle puzzle solved successfully with type permutation!")
+	if is_p1_valid and is_p2_valid and is_p3_valid:
+		log_debug("Triangle puzzle solved successfully forming closed equilateral triangle!")
 		unlock_escape_door()
 
 func unlock_escape_door() -> void:

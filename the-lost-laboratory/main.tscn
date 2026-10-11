@@ -225,7 +225,7 @@ mesh = SubResource("BoxMesh_table")
 surface_material_override/0 = SubResource("StandardMaterial3D_wood")
 
 [node name="Piece1" type="StaticBody3D" parent="PuzzleTable" unique_id=1849187311]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.41, 0.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.41, 0.115)
 script = ExtResource("2_interactable")
 prompt_message = "Rotate Piece"
 
@@ -237,7 +237,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_brass")
 shape = SubResource("BoxShape3D_piece")
 
 [node name="Piece2" type="StaticBody3D" parent="PuzzleTable" unique_id=1849187312]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.41, 0.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.41, -0.058)
 script = ExtResource("2_interactable")
 prompt_message = "Rotate Piece"
 
@@ -249,7 +249,7 @@ surface_material_override/0 = SubResource("StandardMaterial3D_brass")
 shape = SubResource("BoxShape3D_piece")
 
 [node name="Piece3" type="StaticBody3D" parent="PuzzleTable" unique_id=1849187313]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.41, 0.0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0.41, -0.058)
 script = ExtResource("2_interactable")
 prompt_message = "Rotate Piece"
 

@@ -26,6 +26,8 @@ func log_debug(message: String) -> void:
 
 func _ready() -> void:
 	log_debug("Ready started")
+	_setup_input_actions()
+	
 	# Capture mouse
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	
@@ -52,6 +54,42 @@ func _ready() -> void:
 	if victory_screen:
 		victory_screen.visible = false
 
+func _add_key_action(action: StringName, keycode: Key) -> void:
+	var ev := InputEventKey.new()
+	ev.physical_keycode = keycode
+	InputMap.action_add_event(action, ev)
+
+func _add_mouse_action(action: StringName, button: MouseButton) -> void:
+	var ev := InputEventMouseButton.new()
+	ev.button_index = button
+	InputMap.action_add_event(action, ev)
+
+func _setup_input_actions() -> void:
+	if not InputMap.has_action(&"move_forward"):
+		InputMap.add_action(&"move_forward")
+		_add_key_action(&"move_forward", KEY_W)
+		_add_key_action(&"move_forward", KEY_UP)
+		
+	if not InputMap.has_action(&"move_back"):
+		InputMap.add_action(&"move_back")
+		_add_key_action(&"move_back", KEY_S)
+		_add_key_action(&"move_back", KEY_DOWN)
+		
+	if not InputMap.has_action(&"move_left"):
+		InputMap.add_action(&"move_left")
+		_add_key_action(&"move_left", KEY_A)
+		_add_key_action(&"move_left", KEY_LEFT)
+		
+	if not InputMap.has_action(&"move_right"):
+		InputMap.add_action(&"move_right")
+		_add_key_action(&"move_right", KEY_D)
+		_add_key_action(&"move_right", KEY_RIGHT)
+		
+	if not InputMap.has_action(&"interact"):
+		InputMap.add_action(&"interact")
+		_add_key_action(&"interact", KEY_E)
+		_add_mouse_action(&"interact", MOUSE_BUTTON_LEFT)
+
 func _input(event: InputEvent) -> void:
 	# Robust, crash-proof FPS mouse look without Euler gimbal lock / flip
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -74,27 +112,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 			
 	# Press ESC to release/capture mouse cursor
-	if event.is_action_pressed("ui_cancel") or (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE):
+	if event.is_action_pressed(&"ui_cancel") or (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE):
 		if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 			log_debug("Releasing mouse cursor")
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		else:
 			log_debug("Capturing mouse cursor")
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		get_viewport().set_input_as_handled()
+		return
 			
-	# Interact with E (handling layout-independent physical keycode for Greek layouts) or Left Mouse Click
-	var is_interact_key = false
-	if event is InputEventKey and event.pressed:
-		is_interact_key = (event.keycode == KEY_E or event.physical_keycode == KEY_E)
-		if is_interact_key:
-			log_debug("E key pressed (keycode: " + str(event.keycode) + ", physical: " + str(event.physical_keycode) + ")")
-			
-	var is_mouse_click = event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
-	if is_mouse_click:
-		log_debug("Left mouse click interaction")
-	
-	if is_interact_key or is_mouse_click:
+	# Interact via mapped interact action (E key or left click)
+	if event.is_action_pressed(&"interact") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		log_debug("Interact action triggered")
 		_trigger_interaction()
+		get_viewport().set_input_as_handled()
 
 func _trigger_interaction() -> void:
 	# Play first-person hand reach animation with safe tween recycling
@@ -137,24 +169,11 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y -= gravity * delta
 
-	# Foolproof input detection for WASD and Arrow Keys
-	var input_direction := Vector2.ZERO
-	
-	if Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP):
-		input_direction.y -= 1.0
-	if Input.is_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN):
-		input_direction.y += 1.0
-	if Input.is_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT):
-		input_direction.x -= 1.0
-	if Input.is_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT):
-		input_direction.x += 1.0
-		
-	# Normalize to prevent diagonal speed boost
-	if input_direction.length() > 0:
-		input_direction = input_direction.normalized()
+	# Input movement using Input.get_vector()
+	var input_vector := Input.get_vector(&"move_left", &"move_right", &"move_forward", &"move_back")
 
 	# Calculate movement direction relative to player rotation
-	var direction := Vector3(input_direction.x, 0, input_direction.y)
+	var direction := Vector3(input_vector.x, 0.0, input_vector.y)
 	direction = direction.rotated(Vector3.UP, rotation.y).normalized()
 
 	velocity.x = direction.x * speed
