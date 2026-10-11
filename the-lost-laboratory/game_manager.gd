@@ -149,6 +149,12 @@ func _ready() -> void:
 	if piece_2: piece_2.connect("interacted", _on_piece_interacted.bind(1))
 	if piece_3: piece_3.connect("interacted", _on_piece_interacted.bind(2))
 
+	# Δημιουργία και τοποθέτηση βιβλίων στα ράφια μέσω MultiMesh (1 draw call)
+	_setup_library_books()
+
+	# Δυναμική ατμόσφαιρα: τρεμόπαιγμα λαμπών και παλλόμενο emission κρυστάλλων
+	_setup_atmospheric_effects()
+
 ## Επαναφορά των φωτεινών δεικτών της βιβλιοθήκης σε κόκκινο χρώμα.
 func reset_indicators() -> void:
 	if indicator_1: indicator_1.set_surface_override_material(0, red_material)
@@ -322,3 +328,79 @@ func _on_access_panel_interacted(_player: Node) -> void:
 			await tween.finished
 			if access_panel:
 				access_panel.set("prompt_message", "Escaped")
+
+## Δημιουργεί και τοποθετεί 240 βιβλία στα ράφια των τοίχων χρησιμοποιώντας MultiMeshInstance3D.
+## Εξασφαλίζει υψηλή απόδοση αποδίδοντας ολόκληρη τη συλλογή βιβλίων σε 1 μόνο Draw Call,
+## με τυχαίες διαβαθμίσεις ύψους και αυθεντική παλέτα χρωμάτων παλαιών δεμένων βιβλίων.
+func _setup_library_books() -> void:
+	var book_node := get_node_or_null("../LibraryBooks") as MultiMeshInstance3D
+	if not book_node or not book_node.multimesh:
+		return
+
+	var mm := book_node.multimesh
+	var colors: Array[Color] = [
+		Color(0.38, 0.22, 0.12), # Σκούρο καφέ δέρμα
+		Color(0.42, 0.12, 0.12), # Βυσσινί / μπορντό
+		Color(0.12, 0.30, 0.18), # Σκούρο πράσινο
+		Color(0.12, 0.18, 0.32), # Βαθύ μπλε
+		Color(0.48, 0.38, 0.22), # Ώχρα / περγαμηνή
+	]
+
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42 # Ντετερμινιστική διάταξη για σταθερό αισθητικό αποτέλεσμα
+
+	var idx: int = 0
+	# Ρυθμίσεις για τα 4 ράφια (2 αριστερά, 2 δεξιά)
+	var shelf_configs: Array[Dictionary] = [
+		{"x": -5.7, "y": 1.40, "z_min": -3.8, "z_max": 3.8, "rot": 0.0},
+		{"x": -5.7, "y": 2.20, "z_min": -3.8, "z_max": 3.8, "rot": 0.0},
+		{"x": 5.7, "y": 1.40, "z_min": -3.8, "z_max": 3.8, "rot": PI},
+		{"x": 5.7, "y": 2.20, "z_min": -3.8, "z_max": 3.8, "rot": PI},
+	]
+
+	for cfg in shelf_configs:
+		var count_per_shelf: int = 60
+		var step: float = (cfg.z_max - cfg.z_min) / float(count_per_shelf)
+		for j in range(count_per_shelf):
+			if idx >= mm.instance_count:
+				break
+			var z_pos: float = cfg.z_min + float(j) * step + rng.randf_range(-0.01, 0.01)
+			var scale_y: float = rng.randf_range(0.85, 1.12)
+			var t := Transform3D()
+			t = t.scaled(Vector3(1.0, scale_y, 1.0))
+			t = t.rotated(Vector3.UP, cfg.rot)
+			t.origin = Vector3(cfg.x, cfg.y + (scale_y - 1.0) * 0.17, z_pos)
+			mm.set_instance_transform(idx, t)
+			mm.set_instance_color(idx, colors[rng.randi() % colors.size()])
+			idx += 1
+
+## Ρυθμίζει τα δυναμικά ατμοσφαιρικά εφέ που εξελίσσονται στον χρόνο:
+## 1. Looping Tween για ελαφρύ τρεμόπαιγμα της έντασης των λαμπών.
+## 2. Looping Tween για παλλόμενη εκπομπή φωτός (emission) στους κρυστάλλους και δείκτες.
+func _setup_atmospheric_effects() -> void:
+	var room_light := get_node_or_null("../RoomLight") as OmniLight3D
+	var table_lamp := get_node_or_null("../TableLamp") as OmniLight3D
+	var bookcase_lamp := get_node_or_null("../BookcaseLamp") as OmniLight3D
+
+	if room_light: _create_lamp_flicker(room_light, 1.3)
+	if table_lamp: _create_lamp_flicker(table_lamp, 1.1)
+	if bookcase_lamp: _create_lamp_flicker(bookcase_lamp, 1.2)
+
+	# Παλμός εκπομπής φωτός (emission) στους κρυστάλλους
+	var pulse_tween := create_tween().set_loops()
+	pulse_tween.tween_method(func(val: float):
+		if red_material: red_material.emission_energy_multiplier = val
+		if green_material: green_material.emission_energy_multiplier = val
+	, 2.2, 3.8, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	pulse_tween.tween_method(func(val: float):
+		if red_material: red_material.emission_energy_multiplier = val
+		if green_material: green_material.emission_energy_multiplier = val
+	, 3.8, 2.2, 1.2).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+## Δημιουργεί ανακυκλώσιμο Tween τρεμοπαίγματος για μια λάμπα φωτισμού.
+func _create_lamp_flicker(lamp: OmniLight3D, base_energy: float) -> void:
+	var tween := lamp.create_tween().set_loops()
+	tween.tween_property(lamp, "light_energy", base_energy * 0.93, 0.14).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(lamp, "light_energy", base_energy * 1.04, 0.11).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(lamp, "light_energy", base_energy * 0.97, 0.16).set_trans(Tween.TRANS_SINE)
+	tween.tween_property(lamp, "light_energy", base_energy, 0.12).set_trans(Tween.TRANS_SINE)
