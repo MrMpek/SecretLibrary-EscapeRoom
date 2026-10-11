@@ -140,6 +140,18 @@ size = Vector3(0.4, 0.02, 0.06)
 [sub_resource type="BoxShape3D" id="BoxShape3D_piece"]
 size = Vector3(0.4, 0.02, 0.06)
 
+[sub_resource type="BoxShape3D" id="BoxShape3D_table_col"]
+size = Vector3(1.5, 0.76, 1.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_console_col"]
+size = Vector3(2.4, 3, 0.3)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_wall_top"]
+size = Vector3(2.4, 1, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_door"]
+size = Vector3(2.2, 3, 0.4)
+
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_sleeve"]
 albedo_color = Color(0.12, 0.15, 0.22, 1)
 roughness = 0.85
@@ -224,6 +236,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
 mesh = SubResource("BoxMesh_table")
 surface_material_override/0 = SubResource("StandardMaterial3D_wood")
 
+[node name="PuzzleTableCollision" type="StaticBody3D" parent="PuzzleTable"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.02, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PuzzleTable/PuzzleTableCollision"]
+shape = SubResource("BoxShape3D_table_col")
+
 [node name="Piece1" type="StaticBody3D" parent="PuzzleTable" unique_id=1849187311]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0, 0.41, 0.115)
 script = ExtResource("2_interactable")
@@ -273,6 +291,11 @@ shape = SubResource("BoxShape3D_a8icc")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.6, 2, 6)
 mesh = SubResource("BoxMesh_27hn0")
 
+[node name="FrontWallRightCollision" type="StaticBody3D" parent="FrontWallRight"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FrontWallRight/FrontWallRightCollision"]
+shape = SubResource("BoxShape3D_a8icc")
+
 [node name="ExitDoorPivot" type="MeshInstance3D" parent="." unique_id=431529883]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 0, 5.85)
 
@@ -280,6 +303,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.1, 0, 5.85)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.1, 1.5, 0)
 mesh = SubResource("BoxMesh_bp5ls")
 surface_material_override/0 = SubResource("StandardMaterial3D_wood")
+
+[node name="DoorCollision" type="StaticBody3D" parent="ExitDoorPivot/DoorPanel"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitDoorPivot/DoorPanel/DoorCollision"]
+shape = SubResource("BoxShape3D_door")
 
 [node name="DoorHandle" type="MeshInstance3D" parent="ExitDoorPivot/DoorPanel" unique_id=654853474]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.95, 1.45, -0.22)
@@ -312,10 +340,21 @@ omni_range = 12.19
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 6)
 mesh = SubResource("BoxMesh_2psfv")
 
+[node name="FrontWallTopCollision" type="StaticBody3D" parent="FrontWallTop"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FrontWallTop/FrontWallTopCollision"]
+shape = SubResource("BoxShape3D_wall_top")
+
 [node name="ControlConsole" type="MeshInstance3D" parent="." unique_id=683446049]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, -5.7)
 mesh = SubResource("BoxMesh_vu0go")
 surface_material_override/0 = SubResource("StandardMaterial3D_wood")
+
+[node name="ControlConsoleCollision" type="StaticBody3D" parent="ControlConsole"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.075)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ControlConsole/ControlConsoleCollision"]
+shape = SubResource("BoxShape3D_console_col")
 
 [node name="Switch1" type="StaticBody3D" parent="ControlConsole" unique_id=1996914256]
 transform = Transform3D(1, 0, 0, 0, 0.90630776, 0.42261827, 0, -0.42261827, 0.90630776, -0.6, 0.5, 0.15)
