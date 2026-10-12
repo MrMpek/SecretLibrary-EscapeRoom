@@ -1,6 +1,7 @@
 # Godot 4+ specific ignores
 .godot/
 *.translation
+Builds/
 
 # Log and temporary files
 *.log
